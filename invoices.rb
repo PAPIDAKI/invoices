@@ -36,13 +36,44 @@ def ready_array
   to_array.map{|i| [Date.parse(i[0]),i[1],i[2].to_i,i[3],i[4],i[5].to_f,i[6].to_f] }
 end
 
-def raisins_array
-    #select only raisin codes  1011,1311,1321, 1640 ,1621,1700
-end
 
+
+def return_discount_codes
+  [1311,1321,1700]
 end 
 
+def returns
+  ready_array.select{|i| return_discount_codes.include?(i[2])}
+end
 
+
+def sale_codes
+  [1011,1014,1017,1041]
+end
+
+def sales
+  ready_array.select{|i| sale_codes.include?(i[2])}
+end
+
+
+
+def raisins_array
+  #select only raisin codes  1011,1311,1321, 1640 ,1621,1700
+end
+
+
+
+end
+
+class Array 
+  def invoices_by_code
+    group_by{|i| i[2]}
+  end
+
+  def invoices_size_by_code
+      invoices_by_code.transform_values{|v| v.count}.to_h 
+   end
+end 
 class Customer
    attr_accessor :name,:invoices,:phone
    def initialize(name)
@@ -91,10 +122,10 @@ class Invoice
   def steal_kg
     @kgs -=10
   end
+
   def steal_price
      @net_value -=100
   end
-
 end
 
 class InvoiceList
