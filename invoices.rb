@@ -27,10 +27,11 @@ class PdfImport
     File.read @pdf_file
     yomu = Yomu.new pdf_file# Yomu.read :text, data
     text = yomu.text
-    f = File.new 'allbuys.txt',"w"
+    f = File.new 'allbuys2.txt',"w"
     f.write text.gsub(/\.|\r|\n|\"/, '')
     f.close
   end
+
 
   def invoices_array
     txt = IO.read 'allsales.txt'
@@ -39,12 +40,26 @@ class PdfImport
     to_array_stripped.map { |i| [Date.parse(i[0]), i[1], i[2].to_i, i[3], i[4], i[5].to_f, i[6].to_f] }
   end
 
+  def buys_array
+    txt = IO.read 'allbuys2.txt'
+    to_array = txt.scan(/(?<date>\d{2}\/\d{2}\/\d{4})(?<invoice>\s+\d+)(?<code>\s.\W?\d+\W)(?<customer>\W+\({0,1}\W{0,1}\d{0,1}\W+\){0,1})(?<vat>\b\d+\b)(?<kgs>\s{0,2}\d{0,7},\d{2})(?<value>\s{0,2}\d{0,5},\d{2})/)
+    to_array_stripped = to_array.map { |e| e.map { |l| l.strip } }
+    to_array_stripped.map { |i| [Date.parse(i[0]), i[1], i[2].to_i, i[3], i[4], i[5].to_f, i[6].to_f] }
+  end
+
+end 
+
+class Array
+  def raisin_buys_codes 
+    [2011,2012,2021,2027]
+  end
+
   def return_discount_codes
     [1311, 1321, 1700]
   end
 
   def returns
-    invoices_array.select { |i| return_discount_codes.include?(i[2]) }
+    select { |i| return_discount_codes.include?(i[2]) }
   end
 
   def sale_codes
@@ -52,15 +67,15 @@ class PdfImport
   end
 
   def sales
-    invoices_array.select { |i| sale_codes.include?(i[2]) }
+    select { |i| sale_codes.include?(i[2]) }
   end
 
   def yearly_sales
-    sales.group_by { |i| i[0].year }.transform_values { |value| value.map { |v| v[5].to_i }.sum }.sort.reverse.to_h
+    sales.group_by { |i| i[0].year }.transform_values { |value| value.map { |v| v[5]/1000}.sum.floor }.sort.reverse.to_h
   end
 
   def yearly_returns
-    returns.group_by{|i| i[0].year}.transform_values{|value| value.map{|v| v[5].to_i}.sum}.sort.reverse.to_h
+    returns.group_by{|i| i[0].year}.transform_values{|value| value.map{|v| v[5]/1000}.sum.floor}.sort.reverse.to_h
   end
 
   def yearly_net
@@ -69,7 +84,7 @@ class PdfImport
   end
 
   def monthly_sales
-    sales.group_by{ |i| i[0].strftime('%y/%m %b')}.transform_values{|value| value.map{|v| v[5].to_i/1000.0}.sum}.sort.reverse.to_h
+    sales.group_by{ |i| i[0].strftime('%y/%m %b')}.transform_values{|value| value.map{|v| v[5]/1000.0}.sum}.sort.reverse.to_h
   end
 
   def ttm
